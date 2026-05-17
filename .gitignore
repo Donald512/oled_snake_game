@@ -1,0 +1,9 @@
+.pio/
+.vscode/
+lib/
+platformio.ini
+src/*
+lib/
+include/*
+!src/main.cpp
+test/
