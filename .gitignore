@@ -3,7 +3,11 @@
 lib/
 platformio.ini
 src/*
+!src/main.cpp
 lib/
 include/*
-!src/main.cpp
+!include\myi2c.cpp
+!include\myi2c.h
+!include\myssd1306.cpp
+!include\myssd1306.h
 test/
