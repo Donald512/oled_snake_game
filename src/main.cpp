@@ -18,7 +18,7 @@
 
 #define INVERSE_DISPLAY_CMD 0xA7
 
-#define DISPLAY_SLEEP_CMD 0xAE
+#define DISPLAY_OFF_CMD 0xAE
 #define DISPLAY_ON_CMD 0xAF
 
 // ! Scroll instructions pg 28 
@@ -39,12 +39,16 @@
 #define DISABLE_ENTIRE_DISPLAY_ON_CMD 0xA4
 #define NORMAL_DISPLAY_CMD 0xA6
 #define CHARGE_PUMP_CMD 0x8D
+#define DEACTIVATE_SCROLL_CMD 0x2E
 
 #define ADDRESS_MODE_CMD 0x20
 #define HORIZ_ADDRESS_MODE_CMD 0x0
 
 #define CMD_MODE 0x00
 #define DATA_MODE 0x40
+
+#define COLUMN_ADDRESS_CMD 0x21 // used to set start and end
+#define PG_ADDRESS_CMD  0x22
 
 #define t_cycle 2500    // 1/2.5 * 10-6 = 400kHz the cycle shouldnt be faster than this
 #define t_LOW 1250      
@@ -67,6 +71,7 @@
 
 
 #include <Arduino.h>
+
 
 void i2c_init();
 void S1306_init();
@@ -98,104 +103,87 @@ void S1306_init(){
     // i2c_init();
     i2cStart();
     i2cWrite(SSD_1306_ADDR1_WRITE);
-
     i2cWrite(CMD_MODE);
-    // set MUX ratio
-    i2cWrite(MUX_RATIO_CMD);
-    i2cWrite(0x3F);     // mux ratio is 63 + 1, full display enable
 
-    // Set display offset
-    i2cWrite(DISP_OFFSET_CMD);
-    i2cWrite(0x0);  // display offset is 0, no vertical shifting
 
-    // Set display start line
-    i2cWrite(DISP_STRT_LINE_CMD | 0);   // 0 offset
-
-    // Set segment remap
-    i2cWrite(SEG_REMAP_CMD); 
-
-    // set com output scan direction
-    i2cWrite(COM_OUT_SCAN_DIR_CMD_NORMAL);
-
-    // set com pins hardware config
-    i2cWrite(0xDA);
-    i2cWrite(0x02);
-
-    // set contrast
-    i2cWrite(0x81);
-    i2cWrite(127);  // 50% brightness, 0x75, goes from 0 to 255 // ! tweak contrast
-
-    // disable entire display on
-    i2cWrite(DISABLE_ENTIRE_DISPLAY_ON_CMD);
-
-    // set normal display, 1 is on, 0 is off
-    i2cWrite(NORMAL_DISPLAY_CMD);
-
+    i2cWrite(DISPLAY_OFF_CMD);
     // set oscillator freq  
     i2cWrite(FRQ_OUT_CMD);
     i2cWrite((8 << 4) | 0); // 0x80 so osc freq of 8, max is 15, (prescaler/divide ratio is 0 + 1 )// ! tweak osc freq
+    // set MUX ratio
+    i2cWrite(MUX_RATIO_CMD);
+    i2cWrite(0x1F);     // mux ratio is 31 + 1 , full display enable
 
+    
+    // Set display offset
+    i2cWrite(DISP_OFFSET_CMD);
+    i2cWrite(0x0);  // display offset is 0, no vertical shifting
+    // Set display start line
+    i2cWrite(DISP_STRT_LINE_CMD | 0);   // 0 offset
     // enable charge pump since arduino can only provide 5v and it needs 7v to 15v, sacrifices current to boost voltage
     i2cWrite(CHARGE_PUMP_CMD);
     i2cWrite(0x14); // enable charge pump
 
+
+    i2cWrite(ADDRESS_MODE_CMD);
+    i2cWrite(HORIZ_ADDRESS_MODE_CMD);    
+    // Set segment remap
+    i2cWrite(SEG_REMAP_CMD | 0x01); 
+    // set com output scan direction
+    i2cWrite(COM_OUT_SCAN_DIR_CMD_NORMAL | 0x08);
+
+
+    // set com pins hardware config
+    i2cWrite(0xDA);
+    i2cWrite(0x02);
+    // set contrast
+    i2cWrite(0x81);
+    i2cWrite(127);  // 50% brightness, 0x75, goes from 0 to 255 // ! tweak contrast
+
+
+    // Set precharge period 0xD9
+    i2cWrite(0xD9);
+    i2cWrite(0xF1);
+    // Set V_com Deselect 0xDB
+    i2cWrite(0xDB);
+    i2cWrite(0x40);
+    // disable entire display on
+    i2cWrite(DISABLE_ENTIRE_DISPLAY_ON_CMD);
+    // set normal display, 1 is on, 0 is off
+    i2cWrite(NORMAL_DISPLAY_CMD);
+    i2cWrite(DEACTIVATE_SCROLL_CMD);
     // display on
     i2cWrite(DISPLAY_ON_CMD);
 
-    i2cWrite(ADDRESS_MODE_CMD);
-    i2cWrite(HORIZ_ADDRESS_MODE_CMD);
+
+
+    // i2cWrite(COLUMN_ADDRESS_CMD);
+    // i2cWrite(0);    // start
+    // i2cWrite(127);  // end
+    
+    // i2cWrite(PG_ADDRESS_CMD);
+    // i2cWrite(0);
+    // i2cWrite(7);
+
+
     
     i2cStop();
-
 }
-
-// void i2cWrite(u8 data){
-//     // make sure sda is output
-// 	DDRC |= (1 << (A4 - A0));
-//     for (u8 i = 0; i < 8; i++){
-//         sclLow();
-//         _delay_loop_1(NS_TO_LOOP1(t_LOW));
-//         sdaWrite(!!(data & (1 << 7)));
-//         _delay_loop_1(NS_TO_LOOP1(t_SD));
-//         sclReleaseLine();
-//         data <<= 1;
-//         _delay_loop_1(NS_TO_LOOP1(t_HIGH));
-//     }
-//     sdaReleaseLine(); // release line to check ack()
-//     if (readAck()); // ion really care if ACK or not // todo: check if any problems 
-// }
 
 void i2cWrite(u8 data){
-    DDRC |= (1 << 4); // SDA output
-    
+    // make sure sda is output
+	DDRC |= (1 << (A4 - A0));
     for (u8 i = 0; i < 8; i++){
         sclLow();
-        _delay_us(5); // Standard I2C timing
-        
-        if(data & 0x80) sdaReleaseLine();
-        else sdaLow();
-        
-        _delay_us(2); // Setup time
+        _delay_loop_1(NS_TO_LOOP1(t_LOW));
+        sdaWrite(!!(data & (1 << 7)));
+        _delay_loop_1(NS_TO_LOOP1(t_SD));
         sclReleaseLine();
-        _delay_us(5); // High period
-        
         data <<= 1;
+        _delay_loop_1(NS_TO_LOOP1(t_HIGH));
     }
-    
-    // Read ACK
-    sclLow();
-    _delay_us(5);
-    sdaReleaseLine();
-    _delay_us(2);
-    sclReleaseLine();
-    _delay_us(5);
-    
-    bool ack = !(PINC & (1 << 4));
-    
-    sclLow();
-    _delay_us(5);
+    if (readAck()); // ion really care if ACK or not // todo: check if any problems 
 }
-
 
 
 void i2cStart(){
@@ -265,6 +253,19 @@ void clearDisplay(){
 void updateDisplay(){
     i2cStart();
     i2cWrite(SSD_1306_ADDR1_WRITE);
+    i2cWrite(CMD_MODE);
+
+    i2cWrite(PG_ADDRESS_CMD);   // triple byte
+    i2cWrite(0);    // page start address
+    i2cWrite(7);
+
+    i2cWrite(COLUMN_ADDRESS_CMD);
+    i2cWrite(0);
+    i2cWrite(127);
+    i2cStop();
+
+    i2cStart();
+    i2cWrite(SSD_1306_ADDR1_WRITE);
     i2cWrite(DATA_MODE);
     for (u8 y = 0; y < 8; y++){
         for (u8 x = 0; x < 128; x++){  // fill horizontally, column 0 to column 127
@@ -293,6 +294,7 @@ void setup(){
     i2c_init();
     S1306_init();
     updateDisplay();
+    Serial.begin(9600);
 }
 
 u8 x = 0, y = 0;
@@ -301,7 +303,7 @@ u8 lastx = 0, lasty = 0;
 u32 lastTime = millis();
 
 void loop(){
-    if (millis() - lastTime > 150){
+    if (millis() - lastTime > 10){
         drawPixel(lastx, lasty, 0); 
         drawPixel(x, y, 1);
 
@@ -311,11 +313,15 @@ void loop(){
         if (x > 127){
             x = 0;
             y++;
-            if (y > 63){
+            if (y > 31){
                 y = 0;
             }
         }
         lastTime = millis();
         updateDisplay();
+        Serial.print(x);
+        Serial.print(",");
+        Serial.println(y);
+
     }
 }
