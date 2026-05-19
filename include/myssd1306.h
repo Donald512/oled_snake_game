@@ -65,10 +65,9 @@
 // #define t_IDLE  1300    // time before new transmission can start 
 
 
-
-
 #include <myi2c.h>
 #include <string.h> // for memset
+
 
 void S1306_init();
 void clearDisplay();

@@ -60,21 +60,115 @@ u8 gameSpeedMs = 200;
 Button moveBtns[numBtns] = {Button(_left), Button(_up), Button(_down), Button(_right)};    // alloc space for 4 buttons
 bool RUNNING;
 
+void drawBigChar(u8 x, u8 y, char c, u8 color, u8 scale) {
+    // scale = 2 means 16x16 pixels, scale = 3 means 24x24, etc.
+    u8 w = 8 * scale;  // width of each letter
+    u8 h = 8 * scale;  // height
+    
+    switch(c) {
+        case 'S':
+            // Top bar
+            for(u8 i=0; i<h; i++) 
+                for(u8 j=0; j<w; j++) 
+                    drawPixel(x+j, y+i, color);
+            // Right top vertical
+            for(u8 i=h/2; i<h; i++)
+                for(u8 j=w-w/4; j<w; j++)
+                    drawPixel(x+j, y+i, color);
+            // Middle bar
+            for(u8 i=h/2-h/8; i<h/2+h/8; i++)
+                for(u8 j=0; j<w; j++)
+                    drawPixel(x+j, y+i, color);
+            // Left bottom vertical  
+            for(u8 i=0; i<h/2; i++)
+                for(u8 j=0; j<w/4; j++)
+                    drawPixel(x+j, y+i, color);
+            // Bottom bar
+            for(u8 i=h-h/4; i<h; i++)
+                for(u8 j=0; j<w; j++)
+                    drawPixel(x+j, y+i, color);
+            break;
+            
+        case 'N':
+            // Left vertical
+            for(u8 i=0; i<h; i++)
+                for(u8 j=0; j<w/4; j++)
+                    drawPixel(x+j, y+i, color);
+            // Right vertical
+            for(u8 i=0; i<h; i++)
+                for(u8 j=w-w/4; j<w; j++)
+                    drawPixel(x+j, y+i, color);
+            // Diagonal (simplified as steps)
+            for(u8 i=0; i<h; i++) {
+                u8 diag_x = x + (i * w / h);
+                for(u8 j=0; j<w/4; j++)
+                    drawPixel(diag_x + j, y+i, color);
+            }
+            break;
+            
+        case 'K':
+            // Left vertical
+            for(u8 i=0; i<h; i++)
+                for(u8 j=0; j<w/4; j++)
+                    drawPixel(x+j, y+i, color);
+            // Top diagonal
+            for(u8 i=0; i<h/2; i++) {
+                u8 diag_x = x + w/4 + (i * w/4 / (h/2));
+                for(u8 j=0; j<w/4; j++)
+                    drawPixel(diag_x + j, y+i, color);
+            }
+            // Bottom diagonal
+            for(u8 i=h/2; i<h; i++) {
+                u8 diag_x = x + w/2 - ((i-h/2) * w/4 / (h/2));
+                for(u8 j=0; j<w/4; j++)
+                    drawPixel(diag_x + j, y+i, color);
+            }
+            break;
+            
+        case 'E':
+            // Left vertical
+            for(u8 i=0; i<h; i++)
+                for(u8 j=0; j<w/4; j++)
+                    drawPixel(x+j, y+i, color);
+            // Top bar
+            for(u8 i=0; i<h/4; i++)
+                for(u8 j=0; j<w; j++)
+                    drawPixel(x+j, y+i, color);
+            // Middle bar
+            for(u8 i=h/2-h/8; i<h/2+h/8; i++)
+                for(u8 j=0; j<3*w/4; j++)
+                    drawPixel(x+j, y+i, color);
+            // Bottom bar
+            for(u8 i=h-h/4; i<h; i++)
+                for(u8 j=0; j<w; j++)
+                    drawPixel(x+j, y+i, color);
+            break;
+    }
+}
+
+void drawBigString(u8 x, u8 y, const char* str, u8 color, u8 scale) {
+    u8 spacing = 8 * scale + 2;  // 2px gap between letters
+    while (*str) {
+        drawBigChar(x, y, *str, color, scale);
+        x += spacing;
+        str++;
+    }
+}
+
+
+
 void setup(){
     S1306_init();
-    
+
+    updateDisplay();
     randomSeed(analogRead(A0));
     // ! show game logo
-    // delay(2000); // Pause for 2 seconds
+    // delay(50000); // Pause for 2 seconds
     clearDisplay();
     createSnake();
     generateApple();
     RUNNING = true;
 
-    // while (true){
-    //     drawSquareShape((squareShape){64, 16});
-    //     updateDisplay();
-    // }
     Serial.begin(9600);
 }
 
