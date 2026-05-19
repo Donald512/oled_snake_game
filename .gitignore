@@ -10,9 +10,9 @@ include/*
 !include/myi2c.h
 !src/myssd1306.cpp
 !include/myssd1306.h
-!include\mybtn.h
+!include/mybtn.h
 !src/mybtn.cpp
-include/mypinoutput.h
+!include/mypinoutput.h
 !src/mypinoutput.cpp
 
 test/
