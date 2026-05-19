@@ -5,12 +5,12 @@
 
 
 #define rightWall 127
-#define bottomWall 31
+#define bottomWall 63
 
-#define size 2
+#define size 4
 
 #define maxNumPartsSnake (rightWall/size * bottomWall/size)
-#define maxNumPartsSnake 100
+#define maxNumPartsSnake 100    // overwrites but done to not overallocate
 
 #define black 0
 #define white 1
@@ -48,6 +48,7 @@ void generateApple();
 void drawApple();
 bool headOnApple();
 void changeDir(u8 pin);
+void drawBorder();
 
 direction headDir = {0, 0};
 u16 currentLevel = 1;
@@ -56,15 +57,7 @@ squareShape snake[maxNumPartsSnake] = {0};
 
 u8 gameSpeedMs = 200;
 
-/*
-Button leftBtn(5);
-Button upBtn(6);
-Button downBtn(7);
-Button rightBtn(9);
-*/
-
 Button moveBtns[numBtns] = {Button(_left), Button(_up), Button(_down), Button(_right)};    // alloc space for 4 buttons
-// u8 buttonPins[numBtns] = {5, 6, 7, 9};
 bool RUNNING;
 
 void setup(){
@@ -105,6 +98,7 @@ void loop(){
                 generateApple();
             }
             eraseSquareShape(snake[currentLevel - 1]);
+            drawBorder();
             moveSnake();
             lastTime = now;
             updateDisplay();
@@ -112,6 +106,16 @@ void loop(){
         Serial.print(snake[0].x);
         Serial.print(", ");
         Serial.println(snake[0].y);
+    }
+    else{
+        currentLevel = 1;
+        clearDisplay();
+        createSnake();
+        generateApple();
+        headDir.down = 0;
+        headDir.right = 0;
+        RUNNING = true;
+        updateDisplay();
     }
 
 }
@@ -174,18 +178,23 @@ bool addStructs(squareShape head[], direction dir){
     i8 resultX = head->x + dir.right;
     i8 resultY = head->y + dir.down;
     if (dir.right){
-        if (resultX >= 0 && resultX <= rightWall){
+        if (resultX >= 0 && resultX <= rightWall + 1 - size){
             head->x = resultX;
         }
         else {
+            Serial.println(resultX);
             return false;
         }
     }
     else if (dir.down){
-        if (resultY >= 0 && resultY <= bottomWall){
+        if (resultY >= 0 && resultY <= bottomWall + 1 - size ){     // eg if size is 4, 127 - 4 = 123, 123, 124, 125, 126, skips 127, so have to shift it up 1 
             head->y = resultY;
         }
         else {
+            Serial.print("head y position: ");
+            Serial.print(head->y);
+            Serial.print(", Direction down: ");
+            Serial.println(dir.down);
             return false;
         }
     }
@@ -194,7 +203,7 @@ bool addStructs(squareShape head[], direction dir){
 
 
 void createSnake(){
-    snake[0].x = random(0, (rightWall/size) + 1 ) * size;  // makes sure its a multiple of size
+    snake[0].x = random(0, (rightWall/size) + 1 ) * size;  // makes sure its a multiple of size, also better if size is a factor of rightwall - 1 (0 indexed)
     snake[0].y = random(0, (bottomWall/size) + 1) * size; 
     drawSquareShape(snake[0]);
 }
@@ -204,6 +213,18 @@ void createSnake(){
 void moveSnake(){
     squareShape headCopy = snake[0];
     if (!addStructs(&headCopy, headDir)){
+        // Serial.print(headCopy.x);
+        // Serial.println(", ");
+        // Serial.println(headCopy.y);
+            Serial.print("Died at: ");
+            Serial.print(headCopy.x);
+            Serial.print(",");
+            Serial.println(headCopy.y);
+            // Add a loop to print the whole snake array here
+            for(int i=0; i<currentLevel; i++) {
+                Serial.print("Part "); Serial.print(i); Serial.print(": ");
+                Serial.print(snake[i].x); Serial.print(","); Serial.println(snake[i].y);
+            }
         RUNNING = false;
         return;
     }
@@ -211,7 +232,7 @@ void moveSnake(){
     for ( ; i > 1; i--){
         snake[i - 1] = snake[i - 2];
     }
-    snake[0] = headCopy;
+    snake[0] = headCopy;  // copy the results
     // ! must do body collision check inside this function, instead of addStructs because it takes a copy
     for (u16 i = 1; i < currentLevel; i++){
         if (snake[0].x == snake[i].x && snake[0].y == snake[i].y){
@@ -256,3 +277,14 @@ bool headOnApple(){
     return false;
 }
 
+void drawBorder(){
+    for (u8 i = 0; i < 128; i++){
+        drawPixel(i, 1, white);
+        drawPixel(i, bottomWall, white);
+
+    }
+    for (u8 j = 0; j < bottomWall; j++){
+        drawPixel(0, j, white);
+        drawPixel(127, j, white);
+    }
+}

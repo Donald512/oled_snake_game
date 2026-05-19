@@ -53,6 +53,8 @@
 #define COLUMN_ADDRESS_CMD 0x21 // used to set start and end
 #define PG_ADDRESS_CMD  0x22
 
+
+
 // #define t_cycle 2500    // 1/2.5 * 10-6 = 400kHz the cycle shouldnt be faster than this
 // #define t_LOW 1250      
 // #define t_HIGH 1250     

@@ -16,7 +16,8 @@ void S1306_init(){
     i2cWrite((8 << 4) | 0); // 0x80 so osc freq of 8, max is 15, (prescaler/divide ratio is 0 + 1 )// ! tweak osc freq
     // set MUX ratio
     i2cWrite(MUX_RATIO_CMD);
-    i2cWrite(0x1F);     // mux ratio is 31 + 1 , full display enable
+    // i2cWrite(0x1F);     // mux ratio is 31 + 1 , half display enable
+    i2cWrite(0x3F);     // mux ratio is 63 + 1 , full display enable
 
     
     // Set display offset
@@ -39,7 +40,9 @@ void S1306_init(){
 
     // set com pins hardware config
     i2cWrite(0xDA);
-    i2cWrite(0x02);
+    i2cWrite(0x12);     // ! Using alternative layout, 0x02 made my pixels rectanfular instead of square
+    // i2cWrite(0x02); 
+
     // set contrast
     i2cWrite(0x81);
     i2cWrite(127);  // 50% brightness, 0x75, goes from 0 to 255 // ! tweak contrast
@@ -65,7 +68,7 @@ void S1306_init(){
 
 
 void clearDisplay(){
-    memset((void*)globalBackbuffer, 0, sizeof(u8) * 128 * 8);
+    memset((void*)globalBackbuffer, 0, sizeof(globalBackbuffer));
 }
 
 
