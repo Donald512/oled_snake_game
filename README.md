@@ -1,9 +1,12 @@
 <h>Embedded snake game | AVR Bit-Banged I2C & SSD1306 Driver</h>
 
 A fully from-scratch Snake game for the ATmega328P. No Wire.h, no digitalWrite(), no graphic libraries.
+
+
 Continuation of my other repo, win32 snake, which I built to first understand how the snake game and pattern works. 
-Built it on windows first because it is easier to debug on laptop. Just change a variable and hit compile and see the results, but on the hardware, you don't know if it's a floating pin, NACK problem or logic problem. 
-So building on Windows was to make sure the game worked. 
+Built it on windows first because it is easier to debug on laptop. Just change a variable and hit compile and see the results, but on the hardware, you don't know if it's a floating pin, NACK problem or logic problem, so, building on Windows was to make sure the game worked. 
+
+
 I had to change a few things though, like changing most of my bool32 or u32 (for memory efficency on modern CPUs) to u8's (due to the scarce storage on MCU). 
 
 
