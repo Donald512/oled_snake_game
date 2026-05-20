@@ -12,7 +12,7 @@ include/*
 !include/myssd1306.h
 !include/mybtn.h
 !src/mybtn.cpp
-# !include/mypinoutput.h
-# !src/mypinoutput.cpp
+!include/mypinoutput.h
+!src/mypinoutput.cpp
 
 test/
